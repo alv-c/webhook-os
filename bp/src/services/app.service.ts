@@ -47,10 +47,10 @@ export const saveMsg = async (body: any) => {
             where: {
                 OR: [
                     { status: 'pendente' },
-                    {
-                        status: 'aberta',
-                        created_at: { gte: twentyFourHoursAgo },
-                    },
+                    // {
+                    //     status: 'aberta',
+                    //     created_at: { gte: twentyFourHoursAgo },
+                    // },
                 ],
             },
         });
@@ -112,6 +112,7 @@ const sendRequestToApi = async (id: number | null, body: any) => {
         return true;
     } catch (e) {
         console.log('Erro ao enviar requisição para a API:', e);
+        if (id) await deleteOrderById(id);
         throw new Error('Erro ao enviar requisição para a API');
     }
 };
@@ -131,6 +132,25 @@ const updateOrderStatus = async (prisma: any, id: number | null, dataId: string)
         return true;
     } catch (e) {
         console.log(`Erro ao atualizar ordem de serviço com id ${id}:`, e);
+        return false;
+    }
+};
+
+const deleteOrderById = async (id: number | null) => {
+    if (!id) {
+        console.log('ID inválido para exclusão');
+        return false;
+    }
+    try {
+        await prisma.$transaction(async (prisma) => {
+            await prisma.ordens_servico_wpp.delete({
+                where: { id },
+            });
+            console.log(`Ordem de serviço com ID ${id} foi excluída com sucesso.`);
+        });
+        return true;
+    } catch (e) {
+        console.log('Erro ao excluir a ordem de serviço:', e);
         return false;
     }
 };

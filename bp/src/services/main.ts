@@ -41,8 +41,9 @@ export const main = async (req: any) => {
             try {
                 let retornoSave = await saveMsg(jsonInsert);
                 if (!retornoSave) {
-                    msg = `Essa conta já *possui uma O.S aberta com a mesma solicitação, em um periodo menor que 24 horas* 
-                    ou com o *status Pendente*. Por favor, *aguarde ao menos 24 horas* para abrir outra OS, ou ligue *0800-062-1800*`;
+                    // msg = `Essa conta já *possui uma O.S aberta com a mesma solicitação, em um periodo menor que 24 horas* 
+                    // ou com o *status Pendente*. Por favor, *aguarde ao menos 24 horas* para abrir outra OS, ou ligue *0800-062-1800*`;
+                    msg = `Esta conta *já possui uma ORDEM DE SERVIÇO pendente*, aguarde a resolução, ou ligue *0800-062-1800 em caso de URGÊNCIA*.`;
                 } else {
                     msg = `Ordem de serviço emitida com sucesso! Aguarde o processo de análise, que logo entraremos em contato.`;
                 }
