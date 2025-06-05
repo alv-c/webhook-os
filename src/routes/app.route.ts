@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { generateRoute, router, IRouteMap, dateTimeFormatterUtil } from '../../expressium/src/index.js';
-import { appService, main } from "../services/index.js";
+import { appService, requestService } from "../services/index.js";
 
 export const buildRoutes = (): void => {
   try {
@@ -19,7 +19,7 @@ export const buildRoutes = (): void => {
         method: 'post',
         version: 'v1',
         url: 'webhook',
-        serviceHandler: main.main,
+        serviceHandler: requestService.main,
         requiresAuthorization: false
       } as IRouteMap.IRouteMap
     );

@@ -16,7 +16,7 @@ export const getLocalDate = (): Date => {
   const timezoneOffset = utcDate.getTimezoneOffset();
   
   return new Date(utcDate.getTime() - timezoneOffset * 60_000);
-}
+};
 
 /**
  * ## formatAsDayMonthYear

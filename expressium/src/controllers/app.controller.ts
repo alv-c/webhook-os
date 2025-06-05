@@ -1,4 +1,5 @@
 import { NextFunction, Request, RequestHandler, Response } from 'express';
+import { v4 } from 'uuid';
 import { dateTimeFormatterUtil } from '../utils/index.js';
 
 /**
@@ -61,7 +62,7 @@ export const generateController = (serviceHandler: Function): RequestHandler => 
     next: NextFunction
   ): Promise<void> => {
     const timestamp = dateTimeFormatterUtil.formatAsDayMonthYearHoursMinutesSeconds(dateTimeFormatterUtil.getLocalDate());
-    const timer = `Controller | Timestamp: ${ timestamp } | Name: generateController | Service Name: ${ serviceHandler.name }`;
+    const timer = `Controller | Timestamp: ${ timestamp } | Name: generateController | Service Name: ${ serviceHandler.name } ${ v4() }`;
     
     console.time(timer);
     

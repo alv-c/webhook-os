@@ -12,7 +12,7 @@ const buildServer = async (): Promise<void> => {
 
       app.use(morgan('combined', { stream: accessLog.createWriteStream() }));
     }
-
+    
     app.use(express.json());
     app.use('/api', router);
 
