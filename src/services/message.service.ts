@@ -44,10 +44,11 @@ export const saveMsg = async (body: any) => {
 
         const existingRecords = await prisma.ordens_servico_wpp.findMany({
             where: {
-                OR: [
+                AND: [
                     { status: 'aberta' },
-                ],
-            },
+                    { updated_at: { gte: twentyFourHoursAgo } }
+                ]
+            }
         });
 
         const isCsIdExist = existingRecords.some((record: any) => {
@@ -56,7 +57,7 @@ export const saveMsg = async (body: any) => {
         });
 
         if (isCsIdExist) {
-            const message = `Já existe uma ordem de serviço com as mesmas credenciais inserida nas últimas 24 horas. Por favor, aguarde, ou *ligue em casos de urgência: 0800
+            const message = `Já existe uma ordem de serviço com as mesmas credenciais inserida nas últimas 24 horas. Por favor, aguarde, ou *ligue em casos de urgência: 0800-062-1800*
             `;
             console.log(message);
             return { status: 409, data: { message } };
@@ -64,11 +65,11 @@ export const saveMsg = async (body: any) => {
 
         let id: number | null = null;
         const response = await prisma.$transaction(async (prisma: any) => {
-        await prisma.$queryRaw`
+            await prisma.$queryRaw`
             INSERT INTO ordens_servico_wpp (data_json, \`status\`)
             VALUES (${body}, 'pendente');
       `;
-        const result = await prisma.$queryRaw<{ id: number }[]>`
+            const result = await prisma.$queryRaw<{ id: number }[]>`
             SELECT id
             FROM ordens_servico_wpp
             WHERE id = LAST_INSERT_ID();
@@ -78,7 +79,9 @@ export const saveMsg = async (body: any) => {
         id = response;
 
         const apiResult = await sendRequestToApi(id, body);
-        return { status: 201, data: { message: 'Ordem de serviço emitida com sucesso.', id } };
+        if (apiResult) {
+            return { status: 201, data: { message: `Ordem de serviço de número ${apiResult} emitida com sucesso.`, id } };
+        } else return { status: 500, data: { message: `Erro ao emitir ordem de serviço. Tente novamente mais tarde.`, id } };
     } catch (e) {
         console.error('Erro ao salvar a mensagem:', e);
         return { status: 500, data: { message: 'Erro ao salvar a ordem de serviço' } };
@@ -87,23 +90,33 @@ export const saveMsg = async (body: any) => {
 
 const sendRequestToApi = async (id: number | null, body: any): Promise<boolean> => {
     try {
-        const httpClient = new HttpClientUtil.HttpClient();
-        httpClient.setAuthenticationStrategy(
+        const httpClientInstance = new HttpClientUtil.HttpClient();
+
+        httpClientInstance.setAuthenticationStrategy(
             new BasicAndBearerStrategy.BasicAndBearerStrategy(
-                'get',
-                'http://192.168.2.75:3120/api/v1/get/authentication',
-                'admin',
-                'admin@192837465'
+                'post',
+                'https://cloud.segware.com.br/server/v2/auth',
+                process.env.SIGMA_CLOUD_USERNAME as string,
+                process.env.SIGMA_CLOUD_PASSWORD as string,
+                undefined,
+                undefined,
+                { type: "WEB" },
+                (response: Axios.AxiosXHR<any>) => response.data,
+                (): number => 0
             )
         );
 
-        const { data } = await httpClient.post<any>(
-            'http://192.168.2.75:3120/api/v1/create/service-order-x1',
+        const { data: responseAData }: any = await httpClientInstance.get<any>(`https://cloud.segware.com.br/server/api/v1/6590/accounts/search?searchText=${body.cs_id}&showAccessControlOnly=false&showDisableMonitoring=false&includeDisabled=false`);
+        const account = responseAData.find((account: Record<string, any>) => account.accountCode === body.cs_id);
+
+        const responseB = await httpClientInstance.post<any>(
+            'https://api.segware.com.br/v1/serviceOrders',
             {
-                data: {
-                    id: id ? id.toString() : '0000',
-                    data_json: body || '',
-                }
+                accountId: account.id,
+                defectId: '40807',
+                description: body.descricao_problema,
+                personExecutantId: 94899,
+                requesterId: '80868'
             }
         );
 
@@ -111,13 +124,15 @@ const sendRequestToApi = async (id: number | null, body: any): Promise<boolean> 
             await prisma.ordens_servico_wpp.update({
                 where: { id },
                 data: {
-                    id_os: data.data.id,
+                    id_os: responseB.data.id,
                     status: 'aberta',
                 },
             });
         }
+
         console.log('Ordem de serviço enviada para API e atualizada com sucesso.');
-        return true;
+
+        return (await httpClientInstance.get<any>(`https://api.segware.com.br/v1/serviceOrders/${responseB.data.id}`)).data.sequantialId;
     } catch (e) {
         console.error('Erro ao enviar requisição para a API:', e);
         if (id) await deleteOrderById(id);

@@ -26,5 +26,5 @@
     "experimentalSpecifierResolution": "node"
   },
   "include": ["**/*.js", "**/*.ts"],
-  "exclude": ["dist", "node_modules", "scripts", "**/*.spec.ts", "**/*.log", "**/*.pem"]
+  "exclude": ["dist", "node_modules", "logs", "scripts", "**/*.spec.ts", "**/*.log", "**/*.pem"]
 }

@@ -1,5 +1,6 @@
 import { Express } from 'express';
 import { IncomingMessage, Server, ServerResponse } from 'http';
+import momentTimezone from 'moment-timezone';
 import { ApiError, BaseError } from './errors/index.js';
 import { appRoute } from './routes/index.js';
 import { IRouteMap } from './routes/interfaces/index.js';
@@ -71,8 +72,9 @@ Object.isString = (element: unknown): element is string => {
   return Object.prototype.toString.call(element) === '[object String]';
 };
 
-const LOG_INTERVAL = 600_000;
+const LOG_INTERVAL = 60_000;
 const SHUTDOWN_SIGNAL_LIST = ['SIGTERM', 'SIGINT'] as const;
+const SHUTDOWN_TIMEOUT = 5_000;
 const PORT = process.env.PORT ?? '3000';
 
 /**
@@ -89,7 +91,7 @@ const PORT = process.env.PORT ?? '3000';
 const setupPeriodicLogging = (): NodeJS.Timeout => {
   return setInterval(
     async (): Promise<void> => {
-      console.log(`Server | Timestamp: ${ dateTimeFormatterUtil.formatAsDayMonthYearHoursMinutesSeconds(dateTimeFormatterUtil.getLocalDate()) } | Port: ${ PORT }`);
+      console.log(`Application | Timestamp: ${ momentTimezone().utc().format('DD-MM-YYYY HH:mm:ss') } | Port: ${ PORT }`);
     }, 
     LOG_INTERVAL
   ).unref();
@@ -115,21 +117,21 @@ const setupGracefulShutdown = (runningServerInstance: Server<typeof IncomingMess
       process.on(
         shutdownSignal, 
         (): void => {
-          console.log(`Server | Timestamp: ${ dateTimeFormatterUtil.formatAsDayMonthYearHoursMinutesSeconds(dateTimeFormatterUtil.getLocalDate()) } | Status: ${ shutdownSignal } received. Shutting down the server`);
+          console.log(`Application | Timestamp: ${ momentTimezone().utc().format('DD-MM-YYYY HH:mm:ss') } | Status: ${ shutdownSignal } received. Shutting down the server`);
           
           runningServerInstance.close(
             (): void => {
-              console.log(`Server | Timestamp: ${ dateTimeFormatterUtil.formatAsDayMonthYearHoursMinutesSeconds(dateTimeFormatterUtil.getLocalDate()) } | Status: Server closed`);
+              console.log(`Application | Timestamp: ${ momentTimezone().utc().format('DD-MM-YYYY HH:mm:ss') } | Status: Server closed`);
               process.exit(0);
             }
           );
           
           setTimeout(
             (): void => {
-              console.log(`Server | Timestamp: ${ dateTimeFormatterUtil.formatAsDayMonthYearHoursMinutesSeconds(dateTimeFormatterUtil.getLocalDate()) } | Status: Forcing server shutdown after timeout`);
+              console.log(`Application | Timestamp: ${ momentTimezone().utc().format('DD-MM-YYYY HH:mm:ss') } | Status: Forcing server shutdown after timeout`);
               process.exit(1);
             }, 
-            5000
+            SHUTDOWN_TIMEOUT
           ).unref();
         }
       );
@@ -164,7 +166,7 @@ const startServer = async (serverInstance: Express | Server<typeof IncomingMessa
     const RunningServerInstance = serverInstance.listen(
       PORT, 
       async (): Promise<void> => {
-        console.log(`Server | Timestamp: ${ dateTimeFormatterUtil.formatAsDayMonthYearHoursMinutesSeconds(dateTimeFormatterUtil.getLocalDate()) } | Status: Server started`);
+        console.log(`Application | Timestamp: ${ momentTimezone().utc().format('DD-MM-YYYY HH:mm:ss') } | Status: Server started`);
         setupPeriodicLogging();
       }
     );
@@ -175,9 +177,9 @@ const startServer = async (serverInstance: Express | Server<typeof IncomingMessa
       'error', 
       (error: NodeJS.ErrnoException): void => {
         if (error.code === 'EADDRINUSE') {
-          console.log(`Server | Timestamp: ${ dateTimeFormatterUtil.formatAsDayMonthYearHoursMinutesSeconds(dateTimeFormatterUtil.getLocalDate()) } | Error: Port ${ PORT } is already in use`);
+          console.log(`Error | Timestamp: ${ momentTimezone().utc().format('DD-MM-YYYY HH:mm:ss') } | Error: Port ${ PORT } is already in use`);
         } else {
-          console.log(`Server | Timestamp: ${ dateTimeFormatterUtil.formatAsDayMonthYearHoursMinutesSeconds(dateTimeFormatterUtil.getLocalDate()) } | Error: ${ error.message }`);
+          console.log(`Error | Timestamp: ${ momentTimezone().utc().format('DD-MM-YYYY HH:mm:ss') } | Error: ${ error.message }`);
         }
 
         process.exit(1);
@@ -186,7 +188,7 @@ const startServer = async (serverInstance: Express | Server<typeof IncomingMessa
 
     return RunningServerInstance;
   } catch (error: unknown) {
-    console.log(`Server | Timestamp: ${ dateTimeFormatterUtil.formatAsDayMonthYearHoursMinutesSeconds(dateTimeFormatterUtil.getLocalDate()) } | Error: ${ error instanceof Error ? error.message : String(error) }`);
+    console.log(`Error | Timestamp: ${ momentTimezone().utc().format('DD-MM-YYYY HH:mm:ss') } | Path: expressium/src/index.ts | Location: startServer | Error: ${ error instanceof Error ? error.message : String(error) }`);
     process.exit(1);
   }
 };
@@ -194,7 +196,7 @@ const startServer = async (serverInstance: Express | Server<typeof IncomingMessa
 process.on(
   'uncaughtException', 
   (error: unknown): void => {
-    console.log(`Server | Timestamp: ${ dateTimeFormatterUtil.formatAsDayMonthYearHoursMinutesSeconds(dateTimeFormatterUtil.getLocalDate()) } | Error: ${ error instanceof Error ? error.message : String(error) }`);
+    console.log(`Error | Timestamp: ${ momentTimezone().utc().format('DD-MM-YYYY HH:mm:ss') } | Error: ${ error instanceof Error ? error.message : String(error) }`);
     process.exit(1);
   }
 );
@@ -202,7 +204,7 @@ process.on(
 process.on(
   'unhandledRejection', 
   (error: unknown): void => {
-    console.log(`Server | Timestamp: ${ dateTimeFormatterUtil.formatAsDayMonthYearHoursMinutesSeconds(dateTimeFormatterUtil.getLocalDate()) } | Error: ${ error instanceof Error ? error.message : String(error) }`);
+    console.log(`Error | Timestamp: ${ momentTimezone().utc().format('DD-MM-YYYY HH:mm:ss') } | Error: ${ error instanceof Error ? error.message : String(error) }`);
     process.exit(1);
   }
 );
@@ -217,24 +219,28 @@ export default startServer;
  * @description Creates and registers API routes using a standardized configuration object.
  * This function handles:
  * 
- * - API version validation
- * - Route path construction with version prefixing
- * - Authorization middleware application
+ * - HTTP method definition
+ * - Version definition
+ * - URL path definition
+ * - Service handler binding
+ * - Authorization handling
+ * - Dynamic segment definition
  * - Role-based access control
- * - Custom middleware integration
- * - Controller wrapping for service handlers
+ * - Middleware handler binding
  * 
- * The function builds routes following the pattern /<version>/<url> and applies
- * middleware in the correct sequence based on configuration.
+ * Middleware ordering is preserved, to ensure that authorization and other
+ * middleware functions are executed in the correct sequence before
+ * the service handler is invoked.
  * 
- * @param routeMap - Complete route configuration object with the following properties:
- * @param routeMap.method - HTTP method (get, post, put, delete, etc.).
- * @param routeMap.version - API version identifier (e.g., 'v1', 'v2').
- * @param routeMap.url - Endpoint path excluding version prefix.
+ * @param routeMap - Configuration object defining the route.
+ * @param routeMap.method - HTTP method (e.g., 'get', 'post', etc.).
+ * @param routeMap.version - Version (e.g., 'v1', 'v2', etc.).
+ * @param routeMap.url - URL path.
  * @param routeMap.serviceHandler - Business logic function.
  * @param routeMap.requiresAuthorization - Whether authorization is required (default: true).
- * @param routeMap.roleList - User roles allowed to access this route.
- * @param routeMap.middlewareHandlerList - Additional middleware functions.
+ * @param routeMap.dynamicSegmentList - List of dynamic segments in the URL.
+ * @param routeMap.roleList - List of roles allowed to access the route (optional).
+ * @param routeMap.middlewareHandlerList - List of middleware functions to apply to the route (optional).
  */
 export const generateRoute = appRoute.generateRoute;
 

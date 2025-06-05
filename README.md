@@ -1,3 +1,5 @@
+# chatpro-service-order-webhook
+
 - Projeto: Webhook Ordem de Serviço WhatsApp
 
 ## Visão Geral
@@ -65,8 +67,11 @@ Este projeto é um sistema de Webhook para Ordem de Serviço, usando filas (Bull
 =====================================================================================================================
 
 
-- Chame main no seu controller com o body simulado para processar a mensagem do usuário.
+- inicie a aplicação.
 
+## 
+
+    - npm run start:production
 
 
 
@@ -140,7 +145,7 @@ Execute:
 No arquivo redis.conf, altere:
 
 ## bind 0.0.0.0 ::1
-## port 3040
+## port 3041
 ## requirepass suaSenhaSuperSegura (opcional)
 
 - Configure senha de acesso (opcional, mas recomendado!) Ainda no redis.conf, procure por:
@@ -159,12 +164,4 @@ No arquivo redis.conf, altere:
 
 7️⃣ Teste a conexão remota
 
-## redis-cli -h devlinnine.dyndns.org -p 3040 -a suaSenhaSuperSegura
-
-
-## INFO INFO INFO INFO INFO INFO INFO INFO INFO INFO INFO INFO INFO INFO INFO INFO INFO INFO INFO INFO INFO INFO 
-=====================================================================================================================
-
-node v20.14.0 db mysql 8
-
-EXEMPLO LINK PARA CHAMADA DO WEBHOOK: https://wa.me/55{NUM_WHATSAPP}/?text=*Ordem%20de%20servico*%0A{CS_ID}%20%0A{NUM_ROTA}
+## redis-cli -h devlinnine.dyndns.org -p 3041 -a suaSenhaSuperSegura

@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
+import momentTimezone from 'moment-timezone';
 import { generateRoute, router, IRouteMap, dateTimeFormatterUtil } from '../../expressium/src/index.js';
 import { appService, requestService } from "../services/index.js";
 
@@ -49,7 +50,7 @@ export const buildRoutes = (): void => {
       }
     );
   } catch (error: unknown) {
-    console.log(`Route | Timestamp: ${ dateTimeFormatterUtil.formatAsDayMonthYearHoursMinutesSeconds(dateTimeFormatterUtil.getLocalDate()) } | Name: buildRoutes | Error: ${ error instanceof Error ? error.message : String(error) }`);
+    console.log(`Error | Timestamp: ${ momentTimezone().utc().format('DD-MM-YYYY HH:mm:ss') } | Path: src/routes/app.route.ts | Location: buildRoutes | Error: ${ error instanceof Error ? error.message : String(error) }`);
     process.exit(1);
   }
 };

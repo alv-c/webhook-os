@@ -28,7 +28,7 @@ const findSchemaFiles = async () => {
     const fileList = fs.readdirSync(SCHEMA_DIRECTORY);
     
     return fileList
-      .filter((file) =>  file.endsWith('.prisma'))
+      .filter((file) => file.endsWith('.prisma'))
       .map((file) => path.join(SCHEMA_DIRECTORY, file));
   } catch (error) {
     console.error(`Error reading schema directory: ${ error.message }`);

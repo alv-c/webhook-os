@@ -279,7 +279,7 @@ export const getAuthentication = async (
       }
     };
   } catch (error: unknown) {
-    console.log(`Service | Timestamp: ${ timestamp } | Name: getAuthentication | Error: ${ error instanceof Error ? error.message : String(error) }`);
+    console.log(`Error | Timestamp: ${ timestamp } | Path: expressium/src/services/app.service.ts | Location: getAuthentication | Error: ${ error instanceof Error ? error.message : String(error) }`);
 
     return {
       status: 500,
